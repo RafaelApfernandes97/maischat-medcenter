@@ -1,0 +1,19 @@
+{
+  "name": "medcenter-agendamento",
+  "version": "1.0.0",
+  "description": "Upload de PDF de agenda medica e envio do template teste_agendamento pelo canal 0800",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^2.2.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.10.38",
+    "pg": "^8.22.0"
+  }
+}

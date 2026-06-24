@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mais Chat — Medcenter</title>
+  <meta name="theme-color" content="#FF5700" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <img src="/assets/logo-white.png" alt="Mais Chat" class="logo" />
+      <div class="header-text">
+        <h1>Mais Chat - Medcenter</h1>
+        <p class="sub">Envio em massa para confirmação de agendamento Medcenter</p>
+      </div>
+      <nav class="header-nav">
+        <button id="nav-novo" class="nav-btn" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Novo envio
+        </button>
+        <button id="nav-lotes" class="nav-btn" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+          Acompanhamento
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Etapa 1: upload -->
+    <section id="etapa-upload" class="card">
+      <label id="dropzone" for="pdf" class="dropzone">
+        <input type="file" id="pdf" accept="application/pdf" hidden />
+        <div class="dz-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+        </div>
+        <div class="dz-text"><strong>Clique para escolher</strong> ou arraste o PDF da agenda aqui</div>
+        <div id="dz-file" class="dz-file"></div>
+      </label>
+      <button id="btn-processar" class="btn cta" disabled>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <span class="btn-label">Processar PDF</span>
+      </button>
+      <div id="upload-erro" class="erro"></div>
+    </section>
+
+    <!-- Etapa 2: preview -->
+    <section id="etapa-preview" class="card hidden">
+      <div class="resumo">
+        <div><span class="rotulo">Médico</span><strong id="r-medico">—</strong></div>
+        <div><span class="rotulo">Data</span><strong id="r-data">—</strong></div>
+        <div><span class="rotulo">Válidos</span><strong id="r-validos" class="ok">—</strong></div>
+        <div><span class="rotulo">Inválidos</span><strong id="r-invalidos" class="bad">—</strong></div>
+      </div>
+
+      <div class="tabela-wrap">
+        <table id="tabela">
+          <colgroup>
+            <col class="c-status" /><col class="c-paciente" /><col class="c-telefone" />
+            <col class="c-whatsapp" /><col class="c-hora" /><col class="c-detalhe" /><col class="c-remover" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Status</th><th>Paciente</th><th>Telefone (editável)</th>
+              <th>WhatsApp</th><th>Hora</th><th>Detalhe</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Adicionar contato manualmente -->
+      <div class="add-contato">
+        <span class="add-titulo">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          Adicionar contato
+        </span>
+        <div class="add-campos">
+          <input id="add-nome" type="text" placeholder="Nome do paciente" />
+          <input id="add-telefone" type="text" placeholder="(DDD) número" />
+          <input id="add-hora" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-label="Hora do agendamento (24h)" />
+          <button id="btn-adicionar" class="btn small" type="button">Adicionar</button>
+        </div>
+        <div id="add-erro" class="erro"></div>
+      </div>
+
+      <div class="acoes">
+        <button id="btn-voltar" class="btn ghost">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+          Trocar PDF
+        </button>
+        <button id="btn-enviar" class="btn cta">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+          <span class="btn-label">Enviar lembretes válidos</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Etapa 3: lista de lotes (acompanhamento) -->
+    <section id="etapa-lotes" class="card hidden">
+      <div class="secao-topo">
+        <h2>Acompanhamento de envios</h2>
+        <button id="btn-recarregar-lotes" class="btn ghost small" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          Recarregar
+        </button>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <colgroup>
+            <col style="width:18%" /><col style="width:16%" /><col style="width:12%" />
+            <col style="width:12%" /><col style="width:12%" /><col style="width:12%" /><col style="width:18%" />
+          </colgroup>
+          <thead>
+            <tr><th>Criado em</th><th>Médico</th><th>Data</th><th>Total</th><th>Enviados</th><th>Lidos</th><th>Status</th></tr>
+          </thead>
+          <tbody id="tbody-lotes"></tbody>
+        </table>
+      </div>
+      <div id="lotes-vazio" class="vazio hidden">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+        <span>Nenhum envio realizado ainda.</span>
+      </div>
+    </section>
+
+    <!-- Etapa 4: detalhe de um lote -->
+    <section id="etapa-lote" class="card hidden">
+      <div class="secao-topo">
+        <button id="btn-voltar-lotes" class="btn ghost small" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+          Voltar
+        </button>
+        <button id="btn-atualizar-status" class="btn small" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          <span class="btn-label">Atualizar status</span>
+        </button>
+      </div>
+      <div class="resumo">
+        <div><span class="rotulo">Médico</span><strong id="l-medico">—</strong></div>
+        <div><span class="rotulo">Data</span><strong id="l-data">—</strong></div>
+        <div><span class="rotulo">Enviados</span><strong id="l-enviados" class="ok">—</strong></div>
+        <div><span class="rotulo">Lidos</span><strong id="l-lidos">—</strong></div>
+      </div>
+      <div id="l-status-linha" class="status-linha">—</div>
+      <div class="tabela-wrap">
+        <table>
+          <colgroup>
+            <col style="width:20%" /><col style="width:16%" /><col style="width:24%" />
+            <col style="width:16%" /><col style="width:12%" /><col style="width:12%" />
+          </colgroup>
+          <thead>
+            <tr><th>Paciente</th><th>Telefone</th><th>Mensagem enviada</th><th>Enviado em</th><th>Envio</th><th>Entrega</th></tr>
+          </thead>
+          <tbody id="tbody-lote"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
