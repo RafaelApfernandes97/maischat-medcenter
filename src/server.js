@@ -11,6 +11,15 @@ import { initSchema } from './db.js';
 import { iniciarLote, atualizarStatusLote } from './envioService.js';
 import { listarLotes, obterLote } from './lotesRepo.js';
 import { logInfo, logError, debugAtivo } from './log.js';
+import {
+  requireAdmin,
+  appAutenticado,
+  adminAutenticado,
+  emitirSessaoApp,
+  emitirSessaoAdmin,
+  encerrarSessao,
+} from './auth.js';
+import { validarCredenciais, obterLogin, definirCredenciais, seedCredenciais } from './configRepo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const config = loadConfig();
@@ -29,8 +38,87 @@ const upload = multer({
 // servidor, nao confia em dados vindos do cliente).
 const previas = new Map();
 
+const publicDir = join(__dirname, '..', 'public');
+
+// Arquivos servidos sem login: telas de login/admin e recursos visuais.
+const ASSETS_PUBLICOS =
+  /^\/(login\.html|admin\.html|login\.js|admin\.js|style\.css|favicon\.(ico|svg)|favicon-96x96\.png|site\.webmanifest|web-app-manifest-[\w.-]+\.png|assets\/.*)$/;
+
 app.use(express.json());
-app.use(express.static(join(__dirname, '..', 'public')));
+
+// --- Autenticacao do app (rotas publicas) ---
+app.post('/api/auth/login', async (req, res) => {
+  const { login, senha } = req.body || {};
+  try {
+    if (await validarCredenciais(login, senha)) {
+      emitirSessaoApp(res);
+      return res.json({ ok: true });
+    }
+    res.status(401).json({ erro: 'Login ou senha invalidos.' });
+  } catch (e) {
+    logError('Falha no login', e.stack || e.message);
+    res.status(500).json({ erro: 'Erro interno ao validar o login.' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  encerrarSessao(res);
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  res.json({ autenticado: appAutenticado(req), admin: adminAutenticado(req) });
+});
+
+// --- Painel admin ---
+app.post('/api/admin/login', (req, res) => {
+  const { senha } = req.body || {};
+  const esperada = config.acesso.adminPassword;
+  if (esperada && senha === esperada) {
+    emitirSessaoAdmin(res);
+    return res.json({ ok: true });
+  }
+  res.status(401).json({ erro: 'Senha de admin invalida.' });
+});
+
+app.get('/api/admin/credenciais', requireAdmin, async (req, res) => {
+  try {
+    res.json({ login: (await obterLogin()) || '' });
+  } catch (e) {
+    logError('Falha ao ler credenciais', e.stack || e.message);
+    res.status(500).json({ erro: e.message });
+  }
+});
+
+app.post('/api/admin/credenciais', requireAdmin, async (req, res) => {
+  const { login, senha } = req.body || {};
+  if (!login || !senha) return res.status(400).json({ erro: 'Informe login e senha.' });
+  try {
+    await definirCredenciais(login, senha);
+    logInfo('Credenciais do app atualizadas pelo painel admin.', { login });
+    res.json({ ok: true });
+  } catch (e) {
+    logError('Falha ao definir credenciais', e.stack || e.message);
+    res.status(500).json({ erro: e.message });
+  }
+});
+
+// Paginas publicas de login/admin.
+app.get('/login', (req, res) => res.sendFile(join(publicDir, 'login.html')));
+app.get('/admin', (req, res) => res.sendFile(join(publicDir, 'admin.html')));
+
+// Gate: libera os assets publicos; o resto exige sessao de app valida.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && ASSETS_PUBLICOS.test(req.path)) return next();
+  if (appAutenticado(req)) return next();
+  // APIs sempre recebem 401 (o cliente trata e redireciona); navegacao de
+  // pagina e redirecionada direto para a tela de login.
+  if (!req.path.startsWith('/api/') && req.method === 'GET') return res.redirect('/login');
+  return res.status(401).json({ erro: 'Nao autenticado.' });
+});
+
+// Daqui em diante tudo exige login.
+app.use(express.static(publicDir));
 
 app.post('/api/upload', (req, res) => {
   upload.single('pdf')(req, res, async (err) => {
@@ -145,6 +233,7 @@ app.post('/api/lotes/:id/atualizar-status', async (req, res) => {
 async function start() {
   try {
     await initSchema();
+    await seedCredenciais();
     logInfo('Banco conectado e schema pronto.');
   } catch (e) {
     logError('Falha ao inicializar o banco', e.stack || e.message);

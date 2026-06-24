@@ -1,5 +1,26 @@
 const $ = (id) => document.getElementById(id);
 
+// Sessao expirada/ausente: qualquer 401 leva de volta ao login.
+const _fetch = window.fetch.bind(window);
+window.fetch = async (...args) => {
+  const resp = await _fetch(...args);
+  if (resp.status === 401) {
+    window.location.href = '/login';
+    throw new Error('Sessão expirada.');
+  }
+  return resp;
+};
+
+// Botao "Sair": encerra a sessao e volta ao login.
+document.getElementById('nav-sair')?.addEventListener('click', async () => {
+  try {
+    await _fetch('/api/auth/logout', { method: 'POST' });
+  } catch {
+    /* ignora */
+  }
+  window.location.href = '/login';
+});
+
 // Ícones SVG inline (estilo Lucide, traço 1.75) usados no conteúdo gerado por JS.
 const ICON = {
   x: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',

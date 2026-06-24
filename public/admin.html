@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administração — Mais Chat Medcenter</title>
+  <meta name="theme-color" content="#FF5700" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .auth-wrap { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+    .auth-card {
+      width: 100%; max-width: 420px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px;
+      box-shadow: 0 10px 30px rgba(29, 39, 51, 0.08);
+    }
+    .auth-logo { display: grid; place-items: center; margin-bottom: 18px; }
+    .auth-logo img { height: 40px; }
+    .auth-card h1 { font-size: 1.25rem; margin: 0 0 4px; text-align: center; color: var(--text); }
+    .auth-card .sub { margin: 0 0 22px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+    .auth-field { margin-bottom: 14px; }
+    .auth-field label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .auth-field input {
+      width: 100%; box-sizing: border-box; padding: 11px 12px; font: inherit;
+      border: 1px solid var(--border-strong); border-radius: 10px; background: var(--white); color: var(--text);
+    }
+    .auth-field input:focus { outline: none; border-color: var(--orange-600); box-shadow: 0 0 0 3px var(--ring); }
+    .senha-wrap { position: relative; }
+    .senha-wrap input { padding-right: 44px; }
+    .toggle-senha {
+      position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+      display: grid; place-items: center; width: 32px; height: 32px;
+      background: none; border: none; padding: 0; cursor: pointer; color: var(--text-subtle);
+    }
+    .toggle-senha:hover { color: var(--text); }
+    .toggle-senha .icon { width: 18px; height: 18px; }
+    .auth-card .btn.cta { width: 100%; justify-content: center; margin-top: 6px; }
+    .auth-foot { margin-top: 18px; text-align: center; }
+    .auth-foot a { color: var(--text-muted); font-size: 0.82rem; text-decoration: none; }
+    .auth-foot a:hover { color: var(--orange-600); text-decoration: underline; }
+    .ok-msg { color: var(--green-700); font-size: 0.88rem; margin-top: 10px; text-align: center; font-weight: 600; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrap">
+    <!-- Gate: senha de admin -->
+    <form id="admin-login-form" class="auth-card" autocomplete="off">
+      <div class="auth-logo"><img src="/assets/logo-white.png" alt="Mais Chat" /></div>
+      <h1>Painel administrativo</h1>
+      <p class="sub">Informe a senha de administrador</p>
+
+      <div class="auth-field">
+        <label for="admin-senha">Senha de admin</label>
+        <div class="senha-wrap">
+          <input id="admin-senha" type="password" autocomplete="off" required autofocus />
+          <button type="button" class="toggle-senha" data-target="admin-senha" aria-label="Mostrar senha"></button>
+        </div>
+      </div>
+      <button type="submit" class="btn cta"><span class="btn-label">Acessar</span></button>
+      <div id="admin-login-erro" class="erro"></div>
+      <div class="auth-foot"><a href="/login">Voltar ao login</a></div>
+    </form>
+
+    <!-- Definir login/senha do app -->
+    <form id="cred-form" class="auth-card hidden" autocomplete="off">
+      <div class="auth-logo"><img src="/assets/logo-white.png" alt="Mais Chat" /></div>
+      <h1>Login e senha do sistema</h1>
+      <p class="sub">Defina as credenciais de acesso ao app</p>
+
+      <div class="auth-field">
+        <label for="novo-login">Login</label>
+        <input id="novo-login" type="text" autocomplete="off" required />
+      </div>
+      <div class="auth-field">
+        <label for="nova-senha">Nova senha</label>
+        <div class="senha-wrap">
+          <input id="nova-senha" type="password" autocomplete="new-password" required minlength="4" />
+          <button type="button" class="toggle-senha" data-target="nova-senha" aria-label="Mostrar senha"></button>
+        </div>
+      </div>
+      <button type="submit" class="btn cta"><span class="btn-label">Salvar credenciais</span></button>
+      <div id="cred-erro" class="erro"></div>
+      <div id="cred-ok" class="ok-msg hidden">Credenciais atualizadas com sucesso.</div>
+      <div class="auth-foot"><a href="/login">Ir para o login</a></div>
+    </form>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

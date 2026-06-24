@@ -21,5 +21,17 @@ export function loadConfig() {
     dryRun: String(process.env.DRY_RUN || '').toLowerCase() === 'true',
     databaseUrl: process.env.DATABASE_URL || '',
     port: Number(process.env.PORT || 3000),
+    // Autenticacao de acesso ao app (login/senha e painel admin).
+    acesso: {
+      // Senha do painel admin que define o login/senha do app.
+      adminPassword: process.env.ADMIN_PASSWORD || '',
+      // Segredo para assinar os cookies de sessao.
+      sessionSecret: process.env.SESSION_SECRET || '',
+      // Seed do login/senha inicial (usado apenas na primeira subida).
+      seedLogin: process.env.APP_LOGIN || 'admin',
+      seedPassword: process.env.APP_PASSWORD || '',
+      // Validade da sessao (12h).
+      maxAgeMs: 12 * 60 * 60 * 1000,
+    },
   };
 }

@@ -44,6 +44,11 @@ export async function initSchema() {
       status_atualizado_em timestamptz
     );
     CREATE INDEX IF NOT EXISTS idx_medcenter_msg_lote ON medcenter_lote_mensagens(lote_id);
+    CREATE TABLE IF NOT EXISTS medcenter_config (
+      chave text PRIMARY KEY,
+      valor text NOT NULL,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    );
   `;
   await getPool().query(sql);
 }
