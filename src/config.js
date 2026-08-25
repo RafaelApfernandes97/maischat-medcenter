@@ -6,6 +6,13 @@ export function loadConfig() {
   return {
     apiBase: process.env.MAISCHAT_API_BASE || 'https://api.maischat.io/v3',
     auth: process.env.MAISCHAT_AUTH || '',
+    // Contingencia: se o envio pela v3 (acima) falhar, tentamos a v2. Mesmo
+    // formato de corpo, so muda a base/caminho/token. Se MAISCHAT_AUTH_V2 ficar
+    // vazio, reutilizamos MAISCHAT_AUTH.
+    fallbackV2: {
+      apiBase: process.env.MAISCHAT_API_BASE_V2 || 'https://apimaischat.maischat.io/v2',
+      auth: process.env.MAISCHAT_AUTH_V2 || '',
+    },
     // Template do WhatsApp disparado. O nome vem do .env para nao precisar
     // alterar o codigo ao trocar de template (deve existir e estar aprovado).
     template: {

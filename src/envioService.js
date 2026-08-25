@@ -42,7 +42,7 @@ async function executarLote(loteId, mensagens, config) {
     }
     if (resultado.ok) {
       ok++;
-      logDebug(`Enviado ${m.telefone} (lote ${loteId})`, { wamid: resultado.wamid });
+      logDebug(`Enviado ${m.telefone} (lote ${loteId})`, { wamid: resultado.wamid, versao: resultado.versao });
     } else {
       falhas++;
       logError(`Falha ao enviar ${m.telefone} (lote ${loteId})`, resultado.erro);
@@ -68,9 +68,9 @@ async function enviarReal(mensagem, config) {
   }
   const res = await sendTemplate({ payload, config });
   if (res.ok) {
-    return { ok: true, wamid: extrairWamid(res.data), erro: null };
+    return { ok: true, wamid: extrairWamid(res.data), erro: null, versao: res.versao };
   }
-  return { ok: false, wamid: null, erro: typeof res.data === 'object' ? JSON.stringify(res.data) : String(res.data) };
+  return { ok: false, wamid: null, erro: typeof res.data === 'object' ? JSON.stringify(res.data) : String(res.data), versao: res.versao };
 }
 
 /**

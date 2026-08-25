@@ -79,6 +79,88 @@ test('sendTemplate reporta erro da API sem lancar excecao', async () => {
   assert.deepEqual(res.data, { error: 'numero invalido' });
 });
 
+test('sendTemplate cai para a v2 quando a v3 falha', async () => {
+  const cfg = {
+    ...config,
+    fallbackV2: { apiBase: 'https://apimaischat.maischat.io/v2', auth: 'Bearer V2JWT' },
+  };
+  const chamadas = [];
+  const fakeFetch = async (url, opts) => {
+    chamadas.push({ url, auth: opts.headers['Authorization'] });
+    if (url.includes('/v3/')) return { ok: false, status: 500, json: async () => ({ error: 'v3 fora' }) };
+    return { ok: true, status: 200, json: async () => ({ status: true, data: { messages: [{ id: 'wamid.V2' }] } }) };
+  };
+
+  const payload = buildTemplatePayload({
+    destination: '5519971486054', medico: 'Adney', data: '22/05', hora: '08h00', config: cfg,
+  });
+  const res = await sendTemplate({ payload, config: cfg, fetchImpl: fakeFetch });
+
+  assert.equal(chamadas.length, 2);
+  assert.equal(chamadas[0].url, 'https://api.maischat.io/v3/template/send/wppCloudAPI');
+  assert.equal(chamadas[1].url, 'https://apimaischat.maischat.io/v2/msg/template/wppCloudAPI');
+  assert.equal(chamadas[1].auth, 'Bearer V2JWT');
+  assert.equal(res.ok, true);
+  assert.equal(res.versao, 'v2');
+  assert.equal(extrairWamid(res.data), 'wamid.V2');
+});
+
+test('sendTemplate nao chama a v2 quando a v3 funciona', async () => {
+  const cfg = {
+    ...config,
+    fallbackV2: { apiBase: 'https://apimaischat.maischat.io/v2', auth: 'Bearer V2JWT' },
+  };
+  let chamadas = 0;
+  const fakeFetch = async () => {
+    chamadas++;
+    return { ok: true, status: 200, json: async () => ({ status: true }) };
+  };
+  const payload = buildTemplatePayload({
+    destination: '5519971486054', medico: 'Adney', data: '22/05', hora: '08h00', config: cfg,
+  });
+  const res = await sendTemplate({ payload, config: cfg, fetchImpl: fakeFetch });
+
+  assert.equal(chamadas, 1);
+  assert.equal(res.versao, 'v3');
+});
+
+test('sendTemplate reutiliza a auth da v3 quando a v2 nao tem token proprio', async () => {
+  const cfg = {
+    ...config,
+    fallbackV2: { apiBase: 'https://apimaischat.maischat.io/v2', auth: '' },
+  };
+  let authV2;
+  const fakeFetch = async (url, opts) => {
+    if (url.includes('/v3/')) return { ok: false, status: 500, json: async () => ({ error: 'v3 fora' }) };
+    authV2 = opts.headers['Authorization'];
+    return { ok: true, status: 200, json: async () => ({ status: true }) };
+  };
+  const payload = buildTemplatePayload({
+    destination: '5519971486054', medico: 'Adney', data: '22/05', hora: '08h00', config: cfg,
+  });
+  await sendTemplate({ payload, config: cfg, fetchImpl: fakeFetch });
+
+  assert.equal(authV2, 'Bearer XYZ');
+});
+
+test('sendTemplate cai para a v2 tambem em erro de rede na v3', async () => {
+  const cfg = {
+    ...config,
+    fallbackV2: { apiBase: 'https://apimaischat.maischat.io/v2', auth: 'Bearer V2JWT' },
+  };
+  const fakeFetch = async (url) => {
+    if (url.includes('/v3/')) throw new Error('ECONNREFUSED');
+    return { ok: true, status: 200, json: async () => ({ status: true }) };
+  };
+  const payload = buildTemplatePayload({
+    destination: '5519971486054', medico: 'Adney', data: '22/05', hora: '08h00', config: cfg,
+  });
+  const res = await sendTemplate({ payload, config: cfg, fetchImpl: fakeFetch });
+
+  assert.equal(res.ok, true);
+  assert.equal(res.versao, 'v2');
+});
+
 // --- wamid e status ---
 
 test('extrairWamid pega o id da resposta de envio', () => {

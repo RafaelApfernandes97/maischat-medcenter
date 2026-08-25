@@ -1,9 +1,17 @@
 // Cliente de envio de template do WhatsApp pela API do Mais Chat
 // (broker Meta Cloud API / canal 0800). O nome do template vem do config (.env).
 
-import { logDebug, logError } from './log.js';
+import { logInfo, logDebug, logError } from './log.js';
 
 const BROKER = 'wppCloudAPI';
+
+// Cada versao da API do Mais Chat expoe o envio de template num caminho diferente,
+// mas ambas aceitam o mesmo corpo (`apiTemplate`). A v3 e a atual; a v2 e a
+// contingencia usada automaticamente quando a v3 falha.
+const CAMINHO_ENVIO = {
+  v3: (base) => `${base.replace(/\/$/, '')}/template/send/${BROKER}`,
+  v2: (base) => `${base.replace(/\/$/, '')}/msg/template/${BROKER}`,
+};
 
 /**
  * Monta o corpo da requisicao no formato exigido pela Meta Cloud API.
@@ -140,16 +148,13 @@ export function casarPorTempo(registros, enviadoEm) {
 }
 
 /**
- * Envia o template. Nao lanca excecao em erro HTTP: retorna { ok, status, data }.
- *
- * @param {{ payload: object, config: { apiBase: string, auth: string }, fetchImpl?: Function }} args
+ * POST cru do template para uma URL/token especificos. Nao lanca excecao:
+ * retorna { ok, status, data }. Erro de rede vira { ok:false, status:0 }.
+ * @param {{ url: string, auth: string, payload: object, fetchImpl: Function }} args
  */
-export async function sendTemplate({ payload, config, fetchImpl = fetch }) {
-  const url = `${config.apiBase.replace(/\/$/, '')}/template/send/${BROKER}`;
+async function postTemplate({ url, auth, payload, fetchImpl }) {
   const headers = { 'Content-Type': 'application/json' };
-  if (config.auth) headers['Authorization'] = config.auth;
-
-  logDebug(`sendTemplate -> ${url}`, { destination: payload.destination, template: payload.template?.name });
+  if (auth) headers['Authorization'] = auth;
   try {
     const resp = await fetchImpl(url, {
       method: 'POST',
@@ -162,14 +167,43 @@ export async function sendTemplate({ payload, config, fetchImpl = fetch }) {
     } catch {
       data = null;
     }
-    if (!resp.ok) {
-      logError(`sendTemplate falhou (HTTP ${resp.status}) destino ${payload.destination}`, data);
-    } else {
-      logDebug(`sendTemplate ok destino ${payload.destination}`, { httpStatus: resp.status, wamid: extrairWamid(data) });
-    }
     return { ok: resp.ok, status: resp.status, data };
   } catch (err) {
-    logError(`sendTemplate erro de rede destino ${payload.destination}`, err.message);
     return { ok: false, status: 0, data: { error: err.message } };
   }
+}
+
+/**
+ * Envia o template. Tenta primeiro a API v3 (atual); se o envio falhar (erro HTTP
+ * ou de rede), tenta a v2 como contingencia, quando configurada em
+ * `config.fallbackV2`. Nao lanca excecao: retorna { ok, status, data, versao }.
+ *
+ * @param {{ payload: object, config: { apiBase: string, auth: string,
+ *           fallbackV2?: { apiBase: string, auth: string } }, fetchImpl?: Function }} args
+ */
+export async function sendTemplate({ payload, config, fetchImpl = fetch }) {
+  const urlV3 = CAMINHO_ENVIO.v3(config.apiBase);
+  logDebug(`sendTemplate v3 -> ${urlV3}`, { destination: payload.destination, template: payload.template?.name });
+  const resV3 = await postTemplate({ url: urlV3, auth: config.auth, payload, fetchImpl });
+  if (resV3.ok) {
+    logDebug(`sendTemplate v3 ok destino ${payload.destination}`, { httpStatus: resV3.status, wamid: extrairWamid(resV3.data) });
+    return { ...resV3, versao: 'v3' };
+  }
+  logError(`sendTemplate v3 falhou (HTTP ${resV3.status}) destino ${payload.destination}`, resV3.data);
+
+  // Contingencia v2: mesma carga, base/caminho/token diferentes. Se nao houver
+  // token proprio da v2, reutiliza o da v3.
+  const v2 = config.fallbackV2;
+  if (!v2?.apiBase) {
+    return { ...resV3, versao: 'v3' };
+  }
+  const urlV2 = CAMINHO_ENVIO.v2(v2.apiBase);
+  logInfo(`sendTemplate: tentando contingencia v2 destino ${payload.destination}`, { url: urlV2 });
+  const resV2 = await postTemplate({ url: urlV2, auth: v2.auth || config.auth, payload, fetchImpl });
+  if (resV2.ok) {
+    logInfo(`sendTemplate v2 ok (contingencia) destino ${payload.destination}`, { httpStatus: resV2.status, wamid: extrairWamid(resV2.data) });
+  } else {
+    logError(`sendTemplate v2 tambem falhou (HTTP ${resV2.status}) destino ${payload.destination}`, resV2.data);
+  }
+  return { ...resV2, versao: 'v2' };
 }
