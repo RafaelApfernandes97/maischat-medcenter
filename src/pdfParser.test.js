@@ -13,11 +13,6 @@ async function parsed() {
   return parseAgenda(buf);
 }
 
-test('extrai o medico do cabecalho (Agenda)', async () => {
-  const r = await parsed();
-  assert.equal(r.medico, 'Adney');
-});
-
 test('extrai a data e formata DD/MM e ISO', async () => {
   const r = await parsed();
   assert.equal(r.data, '22/05');

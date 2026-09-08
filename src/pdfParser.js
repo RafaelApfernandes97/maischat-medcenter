@@ -40,11 +40,10 @@ export async function extractItems(buffer) {
  * @param {Array<{ str: string, x: number, y: number, page: number }>} items
  */
 export function buildAgenda(items) {
-  const medico = extractMedico(items);
   const { data, dataISO } = extractData(items);
   const cols = detectColumns(items);
   const linhas = extractLinhas(items, cols);
-  return { medico, data, dataISO, linhas };
+  return { data, dataISO, linhas };
 }
 
 /**
@@ -53,17 +52,6 @@ export function buildAgenda(items) {
 export async function parseAgenda(buffer) {
   const items = await extractItems(buffer);
   return buildAgenda(items);
-}
-
-function extractMedico(items) {
-  // "Agenda:" e o nome vem logo a direita (mesmo Y) ou no proximo item.
-  const idx = items.findIndex((i) => i.str.replace(/\s+/g, '') === 'Agenda:');
-  if (idx === -1) return '';
-  const label = items[idx];
-  const sameLine = items
-    .filter((i) => i.page === label.page && Math.abs(i.y - label.y) < 3 && i.x > label.x)
-    .sort((a, b) => a.x - b.x);
-  return sameLine.length ? sameLine[0].str.trim() : '';
 }
 
 function extractData(items) {

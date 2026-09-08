@@ -42,6 +42,12 @@ let loteIdAtual = null;
 const input = $('pdf');
 const dz = $('dropzone');
 
+// Habilita "Processar PDF" apenas com arquivo selecionado E nome do médico.
+function atualizarBotaoProcessar() {
+  const temMedico = $('medico').value.trim().length > 0;
+  $('btn-processar').disabled = !(arquivo && temMedico);
+}
+
 function definirArquivo(f) {
   if (!f) return;
   if (f.type !== 'application/pdf') {
@@ -51,10 +57,11 @@ function definirArquivo(f) {
   arquivo = f;
   $('upload-erro').textContent = '';
   $('dz-file').textContent = f.name;
-  $('btn-processar').disabled = false;
+  atualizarBotaoProcessar();
 }
 
 input.addEventListener('change', (e) => definirArquivo(e.target.files[0]));
+$('medico').addEventListener('input', atualizarBotaoProcessar);
 dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
 dz.addEventListener('drop', (e) => {
@@ -71,6 +78,7 @@ async function processar() {
 
   const fd = new FormData();
   fd.append('pdf', arquivo);
+  fd.append('medico', $('medico').value.trim());
   try {
     const resp = await fetch('/api/upload', { method: 'POST', body: fd });
     const json = await resp.json();

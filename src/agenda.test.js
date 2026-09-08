@@ -10,13 +10,26 @@ const PDF_PATH = join(__dirname, '..', 'pdfenvio.pdf');
 
 async function preview() {
   const buf = await readFile(PDF_PATH);
-  return prepararPreview(buf);
+  return prepararPreview(buf, 'Adney');
 }
 
-test('inclui cabecalho medico e data', async () => {
+test('usa o nome do medico informado e a data do PDF', async () => {
   const p = await preview();
   assert.equal(p.medico, 'Adney');
   assert.equal(p.data, '22/05');
+});
+
+test('propaga o nome do medico informado para todos os itens', async () => {
+  const buf = await readFile(PDF_PATH);
+  const p = await prepararPreview(buf, '  Dr. Rodrigo Ubiratan  ');
+  assert.equal(p.medico, 'Dr. Rodrigo Ubiratan');
+  assert.ok(p.itens.length > 0);
+  assert.ok(p.itens.every((i) => i.medico === 'Dr. Rodrigo Ubiratan'));
+});
+
+test('rejeita nome do medico vazio', async () => {
+  const buf = await readFile(PDF_PATH);
+  await assert.rejects(() => prepararPreview(buf, '   '), /médico/);
 });
 
 test('cada item traz nome, telefone normalizado e status de validade', async () => {

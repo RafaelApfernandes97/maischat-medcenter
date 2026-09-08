@@ -6,9 +6,13 @@ import { normalizePhone } from './phone.js';
 
 /**
  * @param {Buffer|Uint8Array} buffer  PDF da agenda.
+ * @param {string} medico  Nome do medico informado pelo usuario (obrigatorio).
  * @returns {Promise<{ medico, data, dataISO, itens: Array, totalValidos, totalInvalidos }>}
  */
-export async function prepararPreview(buffer) {
+export async function prepararPreview(buffer, medico) {
+  const nomeMedico = String(medico ?? '').trim();
+  if (!nomeMedico) throw new Error('Informe o nome do médico.');
+
   const agenda = await parseAgenda(buffer);
 
   const itens = agenda.linhas.map((linha, idx) => {
@@ -19,7 +23,7 @@ export async function prepararPreview(buffer) {
       horaTabela: linha.hora,
       nomeCompleto: linha.nomeCompleto,
       primeiroNome: linha.primeiroNome,
-      medico: agenda.medico,
+      medico: nomeMedico,
       data: agenda.data,
       telefoneOriginal: linha.telefone,
       e164: tel.e164,
@@ -30,7 +34,7 @@ export async function prepararPreview(buffer) {
   });
 
   return {
-    medico: agenda.medico,
+    medico: nomeMedico,
     data: agenda.data,
     dataISO: agenda.dataISO,
     itens,

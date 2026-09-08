@@ -124,11 +124,13 @@ app.post('/api/upload', (req, res) => {
   upload.single('pdf')(req, res, async (err) => {
     if (err) return res.status(400).json({ erro: err.message });
     if (!req.file) return res.status(400).json({ erro: 'Nenhum PDF enviado.' });
+    const medico = String((req.body && req.body.medico) || '').trim();
+    if (!medico) return res.status(400).json({ erro: 'Informe o nome do médico.' });
     try {
-      const preview = await prepararPreview(req.file.buffer);
+      const preview = await prepararPreview(req.file.buffer, medico);
       const uploadId = randomUUID();
       previas.set(uploadId, preview);
-      logInfo('Upload processado', { arquivo: req.file.originalname, validos: preview.totalValidos, invalidos: preview.totalInvalidos });
+      logInfo('Upload processado', { arquivo: req.file.originalname, medico, validos: preview.totalValidos, invalidos: preview.totalInvalidos });
       res.json({ uploadId, ...preview });
     } catch (e) {
       logError('Falha ao ler o PDF', e.stack || e.message);
